@@ -63,6 +63,9 @@ client.on('interactionCreate', async function(interaction) {
 
     const attachment = interaction.options.getAttachment('file');
     console.log(attachment)
+
+    const nameParts = attachment.name.split('.');
+    const inputFileExtension = nameParts[nameParts.length -1];
 });
 
 
