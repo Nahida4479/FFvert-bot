@@ -1,5 +1,15 @@
 import 'dotenv/config';
 import { Client, GatewayIntentBits, SlashCommandBuilder } from 'discord.js';
+
+process.on('unhandledRejection', function(error){
+    console.error("Unhandled promise rejection:", error)
+});
+
+process.on('uncaughtException', function(error) {
+    console.error("Uncaught exception:", error);
+});
+
+
 const client = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
@@ -21,6 +31,16 @@ const ConvertCommand = new SlashCommandBuilder()
             .setDescription("The image or video file to convert")
             .setRequired(true)  
     );
+
+
+
+client.on('interactionCreate', async function(interaction) {
+    if (!interaction.isChatInputCommand()) return;
+    if (interaction.commandName !== 'convert') return;
+
+    const attachment = interaction.options.getAttachment('file');
+    console.log(attachment)
+});
 
 
 client.login(process.env.BOT_TOKEN);    
