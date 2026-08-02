@@ -1,7 +1,6 @@
 import 'dotenv/config';
-import { Client, GatewayIntentBits, SlashCommandBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, SlashCommandBuilder, StringSelectMenuBuilder } from 'discord.js';
 import fs from 'fs';
-import { error } from 'console';
 
 const downloadsFolder = 'downloads/';
 
@@ -16,7 +15,7 @@ if (!fs.existsSync(downloadsFolder)) {
 
 const existingFiles = fs.readdirSync(downloadsFolder);
 existingFiles.forEach(function(filename) {
-    fs.unlink(downloadsFolder);
+    fs.unlinkSync(downloadsFolder + filename);
 });
 console.log('Cleaned up', existingFiles.length, 'old file from', downloadsFolder);
 
@@ -66,6 +65,19 @@ client.on('interactionCreate', async function(interaction) {
 
     const nameParts = attachment.name.split('.');
     const inputFileExtension = nameParts[nameParts.length -1];
+
+    const response = await fetch(attachment.url);
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const localFilePath = `downloads/${attachment.id}.${inputFileExtension}`;
+    fs.writeFileSync(localFilePath, buffer);
+
+    const isVideo = attachment.contentType.startsWith('video/');
+    const isImage = attachment.contentType.startsWith('image/');
+
+    const imageFormats = ['png', 'jpg', 'webp', 'bmp'];
+    const videoFormats = ['mp4', 'mp3', 'mov', 'avi', 'mkv', 'wmv', 'gif'];
 });
 
 
