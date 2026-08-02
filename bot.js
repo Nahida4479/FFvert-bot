@@ -56,6 +56,21 @@ const ConvertCommand = new SlashCommandBuilder()
 
 
 
+function buildFormatSelect(formatslist) {
+    const selectMenu = new StringSelectMenuBuilder()
+    .setCustomId('formatSelect')
+    .setPlaceholder("Choose output format");
+
+    formatslist.forEach(function(format) {
+        selectMenu.addOptions({
+            label: format.toUpperCase(),
+            value: format
+        })
+    });
+    return selectMenu;
+}
+
+
 client.on('interactionCreate', async function(interaction) {
     if (!interaction.isChatInputCommand()) return;
     if (interaction.commandName !== 'convert') return;
@@ -78,6 +93,8 @@ client.on('interactionCreate', async function(interaction) {
 
     const imageFormats = ['png', 'jpg', 'webp', 'bmp'];
     const videoFormats = ['mp4', 'mp3', 'mov', 'avi', 'mkv', 'wmv', 'gif'];
+
+
 });
 
 
