@@ -1,6 +1,12 @@
 import 'dotenv/config';
 import { Client, GatewayIntentBits, SlashCommandBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, EmbedBuilder } from 'discord.js';
 import fs from 'fs';
+import ffmpegPath from 'ffmpeg-static';
+import ffprobePath from '@andrkrn/ffprobe-static';
+import { execFile, spawn } from 'child_process';
+import { stdout } from 'process';
+import { StringDecoder } from 'string_decoder';
+import { error } from 'console';
 
 const downloadsFolder = 'downloads/';
 
@@ -165,6 +171,22 @@ if (interaction.isStringSelectMenu()) {
     return;
 }
 
+if (interaction.isButton() && interaction.customId === 'convertButton') {
+    const session = conversionSession.get(interaction.message.id);
+
+    if (!session.format || !session.resolution) {
+        await interaction.reply({ content: "Please choose both a format and a resolution first.", ephemeral: true});
+        return;
+    }
+
+    await interaction.reply({ content: "Converting...", ephemeral: true });
+
+    console.log('Session data:', session);
+
+    execFile(ffprobePath, ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height:format=duration', '-of', 'json', session.localFilePath], function(error, stdout, stderr) {
+        console.error(error);
+    });
+}
 });
 
 
