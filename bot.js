@@ -1,8 +1,11 @@
 import 'dotenv/config';
 import { Client, GatewayIntentBits, SlashCommandBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, EmbedBuilder } from 'discord.js';
 import fs from 'fs';
+import { send } from 'process';
 
 const downloadsFolder = 'downloads/';
+
+const conversionSession = new Map();
 
 if (!fs.existsSync(downloadsFolder)) {
     try {
@@ -116,7 +119,7 @@ client.on('interactionCreate', async function(interaction) {
 
     const resolutionSelectMenu = new StringSelectMenuBuilder()
         .setCustomId('resolutionSelect')
-        .setPlaceholder('Choose resolution')
+        .setPlaceholder('Choose output resolution')
         .addOptions(resolutionsOption);
 
     const convertButton = new ButtonBuilder()
@@ -128,7 +131,7 @@ client.on('interactionCreate', async function(interaction) {
     const resolutionRow = new ActionRowBuilder().addComponents(resolutionSelectMenu);
     const buttonRow = new ActionRowBuilder().addComponents(convertButton);
 
-    const convertEmbed = EmbedBuilder()
+    const convertEmbed = new EmbedBuilder()
         .setTitle("File Conversion")
         .setDescription('Choose the output format and resolution, then click Convert.')
         .setColor(0x800080)
@@ -139,6 +142,26 @@ await interaction.reply({
 
 });
 
+conversionSession.set(sendMessage.id, {
+    localFilePath: localFilePath,
+    isImage: isImage,
+    isVideo: isVideo,
+    format: null,
+    resolution: null
+});
+
+if (interaction.isStringSelectMenu()) {
+    const session = conversionSession.get(interaction.message.id);
+
+    if (interaction.customId === "formatSelect") {
+        session.format = interaction.value[0];
+    } else if (interaction.customId === 'resolutionSelect') {
+        session.resolution = interaction.value[0];
+    }
+
+    await interaction.deferUpdate();
+    return;
+}
 
 });
 
