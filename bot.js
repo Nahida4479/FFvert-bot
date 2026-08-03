@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Client, GatewayIntentBits, SlashCommandBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { Client, GatewayIntentBits, SlashCommandBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, EmbedBuilder } from 'discord.js';
 import fs from 'fs';
 
 const downloadsFolder = 'downloads/';
@@ -118,6 +118,28 @@ client.on('interactionCreate', async function(interaction) {
         .setCustomId('resolutionSelect')
         .setPlaceholder('Choose resolution')
         .addOptions(resolutionsOption);
+
+    const convertButton = new ButtonBuilder()
+        .setCustomId('convertButton')
+        .setLabel('Convert')
+        .setStyle(ButtonStyle.Primary);
+
+    const formatRow = new ActionRowBuilder().addComponents(formatSelectMenu);
+    const resolutionRow = new ActionRowBuilder().addComponents(resolutionSelectMenu);
+    const buttonRow = new ActionRowBuilder().addComponents(convertButton);
+
+    const convertEmbed = EmbedBuilder()
+        .setTitle("File Conversion")
+        .setDescription('Choose the output format and resolution, then click Convert.')
+        .setColor(0x800080)
+
+await interaction.reply({
+    embeds: [convertEmbed],
+    components: [formatRow, resolutionRow, buttonRow]
+
+});
+
+
 });
 
 
