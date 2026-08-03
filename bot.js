@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import { Client, GatewayIntentBits, SlashCommandBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, EmbedBuilder } from 'discord.js';
 import fs from 'fs';
-import { send } from 'process';
 
 const downloadsFolder = 'downloads/';
 
@@ -75,8 +74,7 @@ function buildFormatSelect(formatslist) {
 
 
 client.on('interactionCreate', async function(interaction) {
-    if (!interaction.isChatInputCommand()) return;
-    if (interaction.commandName !== 'convert') return;
+    if (interaction.isChatInputCommand() && interaction.commandName === 'convert') {
 
     const attachment = interaction.options.getAttachment('file');
     console.log(attachment)
@@ -142,6 +140,8 @@ await interaction.reply({
 
 });
 
+const sendMessage = await interaction.fetchReply();
+
 conversionSession.set(sendMessage.id, {
     localFilePath: localFilePath,
     isImage: isImage,
@@ -150,13 +150,15 @@ conversionSession.set(sendMessage.id, {
     resolution: null
 });
 
+return;
+    }
 if (interaction.isStringSelectMenu()) {
     const session = conversionSession.get(interaction.message.id);
 
     if (interaction.customId === "formatSelect") {
-        session.format = interaction.value[0];
+        session.format = interaction.values[0];
     } else if (interaction.customId === 'resolutionSelect') {
-        session.resolution = interaction.value[0];
+        session.resolution = interaction.values[0];
     }
 
     await interaction.deferUpdate();
