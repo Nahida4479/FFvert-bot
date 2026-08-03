@@ -14,6 +14,13 @@ const downloadsFolder = 'downloads/';
 
 const conversionSession = new Map();
 
+function buildProgressBar(parcent) {
+    const totalBars = 20;
+    const filledBars = Math.round((percent / 100) * totalBars);
+    const emptyBars = totalBars - filledBars;
+    return '`[' + '█'.repeat(filledBars) + '░'.repeat(emptyBars) + `] ${percent.toFixed(1)}%\``
+}
+
 if (!fs.existsSync(downloadsFolder)) {
     try {
         fs.mkdirSync(downloadsFolder);
@@ -192,6 +199,7 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
         const probeData = JSON.parse(stdout);
         const originalWidth = probeData.streams[0].width;
         const originalHeight = probeData.streams[0].height;
+        const videoDuration = Number(probeData.format.duration);
         const xdata = session.resolution.split('x');
         const selectedResolutionWidth = Number(xdata[xdata.length - 2]);
         const selectedResolutionHeight = Number(xdata[xdata.length - 1]);
@@ -213,7 +221,7 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
         if (session.format === 'gif') {
             const palleteGifPath = `downloads/pallete-${cryptoSessionID}.png`;
 
-            execFile(ffmpegPath, ['-i', session.localFilePath, '-vf', `scale=${finalWidth}:${finalHeight},palettegen`, palleteGifPath], function(error, stdout, stdeer) {
+            execFile(ffmpegPath, ['-i', session.localFilePath, '-vf', `scale=${finalWidth}:${finalHeight},palettegen`, palleteGifPath], function(error, stdout, stderr) {
                 console.error(error);
                 
                 execFile(ffmpegPath, ['-i', session.localFilePath, '-i', palleteGifPath, '-filter_complex', `scale=${finalWidth}:${finalHeight}[x];[x][1:v]paletteuse`, outputFilePath], async function(error, stdout, stderr) {
@@ -239,8 +247,25 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
 
             });
         } else {
-            execFile(ffmpegPath, ['-i', session.localFilePath, '-vf', `scale=${finalWidth}:${finalHeight}`, outputFilePath], async function(error, stdout, stderr) {
-                console.log(error);
+            let lastUpdatedTime
+            const FFmpegProcess = spawn(ffmpegPath, ['-i', session.localFilePath, '-vf', `scale=${finalWidth}:${finalHeight}`, outputFilePath]);
+
+            FFmpegProcess.stdeer.on('data', function(chunk) {
+                const match = chunk.toString().match(/time=(\d+):(\d+):(\d+\.\d+)/);
+
+                if (match) {
+                    const currentSeconds = Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+                    const percent = Math.min((currentSeconds / videoDuration) * 100, 100);
+
+                    const now = Date.now();
+                    if (now - lastUpdatedTime > 2000) {
+                        lastUpdatedTime = now;
+                        interaction.editReply({ content: buildProgressBar(percent) });
+                    }
+                }
+            });
+
+            FFmpegProcess.on('close', async function(code) {
                 console.log('Conversion done');
                 const outputAttachment = new AttachmentBuilder(outputFilePath);
                 await interaction.channel.send({ content: "Conversion done", files: [outputAttachment]});
@@ -254,7 +279,7 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
                     });
                 }, 30000)
             });
-        }
+}   
     });
 }
 });
