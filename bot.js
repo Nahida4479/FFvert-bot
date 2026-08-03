@@ -204,6 +204,12 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
         }
 
         const outputFilePath = `downloads/output-${attachment.id}.${session.format}`
+
+        if (session.format === 'gif') {
+            execFile(ffmpegPath, [], function() {
+                
+            });
+        }
     });
 }
 });
