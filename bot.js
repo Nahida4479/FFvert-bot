@@ -83,6 +83,7 @@ function buildFormatSelect(formatslist) {
 
 client.on('interactionCreate', async function(interaction) {
     if (interaction.isChatInputCommand() && interaction.commandName === 'convert') {
+        await interaction.deferReply();
 
     const attachment = interaction.options.getAttachment('file');
     console.log(attachment)
