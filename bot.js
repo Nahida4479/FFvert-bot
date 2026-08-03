@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Client, GatewayIntentBits, SlashCommandBuilder, StringSelectMenuBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, SlashCommandBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import fs from 'fs';
 
 const downloadsFolder = 'downloads/';
@@ -95,6 +95,29 @@ client.on('interactionCreate', async function(interaction) {
     const videoFormats = ['mp4', 'mp3', 'mov', 'avi', 'mkv', 'wmv', 'gif'];
 
 
+    let formatSelectMenu;
+
+    if (isImage) {
+        formatSelectMenu = buildFormatSelect(imageFormats);
+    } else if (isVideo) {
+        formatSelectMenu = buildFormatSelect(videoFormats);
+    } else {
+        await interaction.reply({ content: 'Unsupported file type.', ephemeral: true});
+        return;
+    }
+
+    const resolutionsOption = [
+        { label: '4K', value: '3840x2160'},
+        { label: '1440p', value: '2560x1440' },
+        { label: '1080p', value: '1920x1080' },
+        { label: '720p', value: '1280x720' },
+        { label: '480p', value: '854x480' }
+    ];
+
+    const resolutionSelectMenu = new StringSelectMenuBuilder()
+        .setCustomId('resolutionSelect')
+        .setPlaceholder('Choose resolution')
+        .addOptions(resolutionsOption);
 });
 
 
