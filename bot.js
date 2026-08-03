@@ -112,7 +112,7 @@ client.on('interactionCreate', async function(interaction) {
     } else if (isVideo) {
         formatSelectMenu = buildFormatSelect(videoFormats);
     } else {
-        await interaction.reply({ content: 'Unsupported file type.', ephemeral: true});
+        await interaction.editReply({ content: 'Unsupported file type.', ephemeral: true});
         return;
     }
 
@@ -143,7 +143,7 @@ client.on('interactionCreate', async function(interaction) {
         .setDescription('Choose the output format and resolution, then click Convert.')
         .setColor(0x800080)
 
-await interaction.reply({
+await interaction.editReply({
     embeds: [convertEmbed],
     components: [formatRow, resolutionRow, buttonRow]
 
@@ -178,6 +178,7 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
     const session = conversionSession.get(interaction.message.id);
 
     if (!session.format || !session.resolution) {
+        await interaction.message.edit({ components: [] });
         await interaction.reply({ content: "Please choose both a format and a resolution first.", ephemeral: true});
         return;
     }
