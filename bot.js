@@ -185,6 +185,15 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
 
     execFile(ffprobePath, ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height:format=duration', '-of', 'json', session.localFilePath], function(error, stdout, stderr) {
         console.error(error);
+        const probeData = JSON.parse(stdout);
+        const originalWidth = probeData.streams[0].width;
+        const originalHeight = probeData.streams[0].height;
+        const xdata = session.resolution.split('x');
+        const selectedResolutionWidth = Number(xdata[xdata.length - 2]);
+        const selectedResolutionHeight = Number(xdata[xdata.length - 1]);
+
+        let finalWidth;
+        let finalHeight
     });
 }
 });
