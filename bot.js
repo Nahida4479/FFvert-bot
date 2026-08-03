@@ -3,10 +3,11 @@ import { Client, GatewayIntentBits, SlashCommandBuilder, StringSelectMenuBuilder
 import fs from 'fs';
 import ffmpegPath from 'ffmpeg-static';
 import ffprobePath from '@andrkrn/ffprobe-static';
-import { execFile, spawn } from 'child_process';
+import { exec, execFile, spawn } from 'child_process';
 import { stdout } from 'process';
 import { StringDecoder } from 'string_decoder';
 import { error } from 'console';
+import crypto from 'crypto';
 
 const downloadsFolder = 'downloads/';
 
@@ -203,11 +204,25 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
             finalWidth = selectedResolutionWidth;
         }
 
-        const outputFilePath = `downloads/output-${attachment.id}.${session.format}`
+        const cryptoSessionID = crypto.randomUUID();
+        const outputFilePath = `downloads/output-${cryptoSessionID}.${session.format}`
 
         if (session.format === 'gif') {
-            execFile(ffmpegPath, [], function() {
+            const palleteGifPath = `downloads/pallete-${cryptoSessionID}.png`;
+
+            execFile(ffmpegPath, ['-i', session.localFilePath, '-vf', `scale=${finalWidth}:${finalHeight},palettegen`, palleteGifPath], function(error, stdout, stdeer) {
+                console.error(error);
                 
+                execFile(ffmpegPath, ['-i', session.localFilePath, '-i', palleteGifPath, '-filter_complex', `scale=${finalWidth}:${finalHeight}[x];[x][1:v]paletteuse`, outputFilePath], function(error, stdout, stderr) {
+                    console.error(error);
+                    console.log("GIF conversion done");
+                });
+
+            });
+        } else {
+            execFile(ffmpegPath, ['-i', session.localFilePath, '-vf', `scale=${finalWidth}:${finalHeight}`, outputFilePath], function(error, stdout, stderr) {
+                console.log('error');
+                console.log('Conversion done');
             });
         }
     });
