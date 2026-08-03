@@ -16,9 +16,9 @@ const conversionSession = new Map();
 
 function buildProgressBar(parcent) {
     const totalBars = 20;
-    const filledBars = Math.round((percent / 100) * totalBars);
+    const filledBars = Math.round((parcent / 100) * totalBars);
     const emptyBars = totalBars - filledBars;
-    return '`[' + '█'.repeat(filledBars) + '░'.repeat(emptyBars) + `] ${percent.toFixed(1)}%\``
+    return '`[' + '█'.repeat(filledBars) + '░'.repeat(emptyBars) + `] ${parcent.toFixed(1)}%\``
 }
 
 if (!fs.existsSync(downloadsFolder)) {
@@ -109,7 +109,7 @@ client.on('interactionCreate', async function(interaction) {
     const isImage = attachment.contentType.startsWith('image/');
 
     const imageFormats = ['png', 'jpg', 'webp', 'bmp'];
-    const videoFormats = ['mp4', 'mp3', 'mov', 'avi', 'mkv', 'wmv', 'gif'];
+    const videoFormats = ['mp4', 'mov', 'avi', 'mkv', 'wmv', 'gif'];
 
 
     let formatSelectMenu;
@@ -185,11 +185,10 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
     const session = conversionSession.get(interaction.message.id);
 
     if (!session.format || !session.resolution) {
-        await interaction.message.edit({ components: [] });
         await interaction.reply({ content: "Please choose both a format and a resolution first.", ephemeral: true});
         return;
     }
-
+    await interaction.message.edit({ components: [] });
     await interaction.reply({ content: "Converting...", ephemeral: true });
 
     console.log('Session data:', session);
@@ -247,12 +246,12 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
 
             });
         } else {
-            let lastUpdatedTime
+            let lastUpdatedTime = 0;
             const FFmpegProcess = spawn(ffmpegPath, ['-i', session.localFilePath, '-vf', `scale=${finalWidth}:${finalHeight}`, outputFilePath]);
-
-            FFmpegProcess.stdeer.on('data', function(chunk) {
+            FFmpegProcess.stderr.on('data', function(chunk) {
+                console.log('CHUNK:', chunk.toString());
                 const match = chunk.toString().match(/time=(\d+):(\d+):(\d+\.\d+)/);
-
+                console.log('MATCH:', match);
                 if (match) {
                     const currentSeconds = Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
                     const percent = Math.min((currentSeconds / videoDuration) * 100, 100);
@@ -260,13 +259,20 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
                     const now = Date.now();
                     if (now - lastUpdatedTime > 2000) {
                         lastUpdatedTime = now;
-                        interaction.editReply({ content: buildProgressBar(percent) });
+                        interaction.editReply({ content: buildProgressBar(percent) }).catch(function(err) {
+                            console.log('EDIT REPLY ERROR:', err);
+                        });
                     }
                 }
             });
 
             FFmpegProcess.on('close', async function(code) {
+                await interaction.editReply({ content: buildProgressBar(100) }).catch(function(err) {
+                    console.log(err);
+                });
+
                 console.log('Conversion done');
+                
                 const outputAttachment = new AttachmentBuilder(outputFilePath);
                 await interaction.channel.send({ content: "Conversion done", files: [outputAttachment]});
 
