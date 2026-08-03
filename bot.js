@@ -193,7 +193,17 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
         const selectedResolutionHeight = Number(xdata[xdata.length - 1]);
 
         let finalWidth;
-        let finalHeight
+        let finalHeight;
+
+        if (originalHeight > originalWidth) {
+            finalWidth = selectedResolutionHeight
+            finalHeight = selectedResolutionWidth 
+        } else {
+            finalHeight = selectedResolutionHeight;
+            finalWidth = selectedResolutionWidth;
+        }
+
+        const outputFilePath = `downloads/output-${attachment.id}.${session.format}`
     });
 }
 });
