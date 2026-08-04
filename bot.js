@@ -50,7 +50,8 @@ process.on('uncaughtException', function(error) {
 
 
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds]
+    intents: [GatewayIntentBits.Guilds],
+    rest: { timeout: 60000 }
 });
 
 client.once('clientReady', async function() {
@@ -249,26 +250,34 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
         gifProgress.on('close', async function(gifCode) {
             await interaction.editReply({ content: buildProgressBar(100) }).catch(function(err) {
                 console.log(err);
-            });
-
-            console.log("GIF conversion done");
-            const outputAttachmentGIF = new AttachmentBuilder(outputFilePath);
-            await interaction.channel.send({ content: "GIF conversion done!", files: [outputAttachmentGIF] });
-
-            fs.unlink(session.localFilePath, function(err) {
-                if (err) console.log("Failed to delete input file", err);
-            });
-
-            fs.unlink(palleteGifPath, function(err) {
-                if (err) console.log("Failed to delete pallete file", err);
-            });
-
-            setTimeout(function() {
-                fs.unlink(outputFilePath, function(err) {
-                    if (err) console.log("Failed to delete output file", err);
-                });
-            }, 20000);
         });
+
+        console.log("GIF conversion done");
+
+    try {
+        const fileStats = fs.statSync(outputFilePath);
+        console.log("Output file size (MB):", (fileStats.size / 1024 / 1024).toFixed(2));
+
+        const outputAttachmentGIF = new AttachmentBuilder(outputFilePath);
+        await interaction.channel.send({ content: "GIF conversion done!", files: [outputAttachmentGIF] });
+            } catch (sendError) {
+        console.log("Failed to send GIF:", sendError);
+    }
+
+        fs.unlink(session.localFilePath, function(err) {
+            if (err) console.log("Failed to delete input file", err);
+        });
+
+        fs.unlink(palleteGifPath, function(err) {
+            if (err) console.log("Failed to delete pallete file", err);
+        });
+
+        setTimeout(function() {
+            fs.unlink(outputFilePath, function(err) {
+                if (err) console.log("Failed to delete output file", err);
+            });
+        }, 20000);
+    });
     });
 } else {
             let lastUpdatedTime = 0;
