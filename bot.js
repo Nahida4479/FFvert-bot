@@ -193,7 +193,7 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
 
     console.log('Session data:', session);
 
-    execFile(ffprobePath, ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height:format=duration', '-of', 'json', session.localFilePath], function(error, stdout, stderr) {
+    execFile(ffprobePath, ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height:format=duration', '-of', 'json', session.localFilePath], async function(error, stdout, stderr) {
         console.error(error);
         const probeData = JSON.parse(stdout);
         const originalWidth = probeData.streams[0].width;
@@ -218,34 +218,59 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
         const outputFilePath = `downloads/output-${cryptoSessionID}.${session.format}`
 
         if (session.format === 'gif') {
-            const palleteGifPath = `downloads/pallete-${cryptoSessionID}.png`;
+    await interaction.editReply({ content: "🎨 Generating color palette..." }).catch(function(err) {
+        console.log(err);
+    });
 
-            execFile(ffmpegPath, ['-i', session.localFilePath, '-vf', `scale=${finalWidth}:${finalHeight},palettegen`, palleteGifPath], function(error, stdout, stderr) {
-                console.error(error);
-                
-                execFile(ffmpegPath, ['-i', session.localFilePath, '-i', palleteGifPath, '-filter_complex', `scale=${finalWidth}:${finalHeight}[x];[x][1:v]paletteuse`, outputFilePath], async function(error, stdout, stderr) {
-                    console.error(error);
-                    console.log("GIF conversion done");
-                    const outputAttachmentGIF = new AttachmentBuilder(outputFilePath);
-                    await interaction.channel.send({ content: "GIF conversion done!", files: [outputAttachmentGIF]});
+    const palleteGifPath = `downloads/pallete-${cryptoSessionID}.png`;
 
-                    fs.unlink(session.localFilePath, function(err) {
-                        if (err) console.log("Failed to delete input file", err);
+    const paletteProcess = spawn(ffmpegPath, ['-i', session.localFilePath, '-vf', `scale=${finalWidth}:${finalHeight},palettegen`, palleteGifPath]);
+
+    paletteProcess.on('close', function(paletteCode) {
+        let lastUpdatedTime = 0;
+        const gifProgress = spawn(ffmpegPath, ['-i', session.localFilePath, '-i', palleteGifPath, '-filter_complex', `scale=${finalWidth}:${finalHeight}[x];[x][1:v]paletteuse`, outputFilePath]);
+
+        gifProgress.stderr.on('data', function(chunk) {
+            const match = chunk.toString().match(/time=(\d+):(\d+):(\d+\.\d+)/);
+            if (match) {
+                const currentSeconds = Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+                const percent = Math.min((currentSeconds / videoDuration) * 100, 100);
+
+                const now = Date.now();
+                if (now - lastUpdatedTime > 2000) {
+                    lastUpdatedTime = now;
+                    interaction.editReply({ content: buildProgressBar(percent) }).catch(function(err) {
+                        console.log('EDIT REPLY ERROR:', err);
                     });
+                }
+            }
+        });
 
-                    fs.unlink(palleteGifPath, function(err) {
-                        if (err) console.log("Failed to delete pallete file", err);
-                    });
-
-                    setTimeout(function() {
-                        fs.unlink(outputFilePath, function(err) {
-                            if (err) console.log("Failed to delete output file", err);
-                        });
-                    }, 30000)
-                });
-
+        gifProgress.on('close', async function(gifCode) {
+            await interaction.editReply({ content: buildProgressBar(100) }).catch(function(err) {
+                console.log(err);
             });
-        } else {
+
+            console.log("GIF conversion done");
+            const outputAttachmentGIF = new AttachmentBuilder(outputFilePath);
+            await interaction.channel.send({ content: "GIF conversion done!", files: [outputAttachmentGIF] });
+
+            fs.unlink(session.localFilePath, function(err) {
+                if (err) console.log("Failed to delete input file", err);
+            });
+
+            fs.unlink(palleteGifPath, function(err) {
+                if (err) console.log("Failed to delete pallete file", err);
+            });
+
+            setTimeout(function() {
+                fs.unlink(outputFilePath, function(err) {
+                    if (err) console.log("Failed to delete output file", err);
+                });
+            }, 20000);
+        });
+    });
+} else {
             let lastUpdatedTime = 0;
             const FFmpegProcess = spawn(ffmpegPath, ['-i', session.localFilePath, '-vf', `scale=${finalWidth}:${finalHeight}`, outputFilePath]);
             FFmpegProcess.stderr.on('data', function(chunk) {
@@ -272,7 +297,7 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
                 });
 
                 console.log('Conversion done');
-                
+
                 const outputAttachment = new AttachmentBuilder(outputFilePath);
                 await interaction.channel.send({ content: "Conversion done", files: [outputAttachment]});
 
@@ -285,10 +310,10 @@ if (interaction.isButton() && interaction.customId === 'convertButton') {
                     });
                 }, 30000)
             });
-}   
+        }   
     });
 }
-});
+}); 
 
 
 client.login(process.env.BOT_TOKEN);    
